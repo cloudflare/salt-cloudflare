@@ -77,7 +77,7 @@ Run the state in dry run mode:
 salt-call state.apply cloudflare test=true
 ```
 
-Then, if you are happy with the cnages, apply them:
+Then, if you are happy with the changes, apply them:
 
 ```
 salt-call state.apply cloudflare
@@ -87,7 +87,7 @@ After a short period of time your changes should propagate across the network.
 
 ## Copyright
 
-* Copyright 2016 CloudFlare
+* Copyright 2016 Cloudflare
 
 ## License
 

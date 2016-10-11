@@ -30,7 +30,7 @@ Zone data will look like this:
           -----END PGP MESSAGE-----
         zone_id: 0101deadbeefdeadbeefdeadbeefdead
         records:
-          - name: ivan.exmaple.com
+          - name: ivan.example.com
             content: 93.184.216.34
             proxied: true
 
@@ -40,7 +40,7 @@ Each record can have the following fields:
 * `content` - value of the record
 * `type`    - type of the record: `A`, `AAAA`, `SRV`, etc (`A` by default)
 * `proxied` - whether zone should be proxied (`false` by default)
-* `ttl`     - TTL of the record in seconds, `1` means auto" (`1` by default)
+* `ttl`     - TTL of the record in seconds, `1` means auto (`1` by default)
 
 Reference: https://api.cloudflare.com/#dns-records-for-a-zone-properties
 
