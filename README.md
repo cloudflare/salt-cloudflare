@@ -24,14 +24,10 @@ First of all, you have to obtain the Global API Key for the account:
 
 * https://www.cloudflare.com/a/account/my-account
 
-Then you need to get the zone identifier (`zone_id`):
+Then you need to get the zone identifier (Zone ID). You can find it on the main
+page of Cloudflare dashboard:
 
-```
-curl -s -H "X-Auth-Email: foo@example.com" -H "X-Auth-Key: bar" \
-  https://api.cloudflare.com/client/v4/zones | jq -r  '.result[] | (.id + " " + .name)'
-```
-
-The first column of the output is zone identifier.
+* https://www.cloudflare.com/a/overview
 
 #### Salt changes
 
