@@ -38,9 +38,9 @@ Each record can have the following fields:
 
 * `name`    - domain name (including zone)
 * `content` - value of the record
-* `type`    - type of the record: `A`, `AAAA`, `SRV`, etc (`A` by default)
-* `proxied` - whether zone should be proxied (`false` by default)
-* `ttl`     - TTL of the record in seconds, `1` means auto (`1` by default)
+* `type`    - type of the record: A, AAAA, SRV, etc (A by default)
+* `proxied` - whether zone should be proxied (false by default)
+* `ttl`     - TTL of the record, 1 means auto" (1 by default)
 
 Reference: https://api.cloudflare.com/#dns-records-for-a-zone-properties
 
@@ -107,7 +107,7 @@ class Record(namedtuple("Record", ("id", "type", "name", "content", "proxied", "
 
     """
     Cloudflare API expects `data` attribute when you add SRV records
-    instead of `context`. This method synthesizes `data` from `context`.
+    instead of `content`. This method synthesizes `data` from `content`.
     """
     def data(self):
         if self.type == "SRV":
@@ -131,7 +131,7 @@ class Record(namedtuple("Record", ("id", "type", "name", "content", "proxied", "
             }
 
     def __str__(self):
-        ttl_str = "auto" if self.ttl == 1 else "{0}s".format(self.ttl)
+        ttl_str = 'auto' if self.ttl == 1 else '{0}s'.format(self.ttl)
         return "{0} {1} -> '{2}' (proxied: {3}, ttl: {4})".format(
             self.type,
             self.name,
@@ -216,6 +216,7 @@ class Zone(object):
             "name": record.name,
             "content": record.content,
             "proxied": record.proxied,
+            "data": record.data(),
             "ttl": record.ttl,
         })
 
