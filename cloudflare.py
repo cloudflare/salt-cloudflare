@@ -67,7 +67,7 @@ def manage_zone_records(name, zone):
 
     result = {
         "name": name,
-        "changes": {"changes": _changes(diff)},
+        "changes": _changes(diff),
         "result": None,
     }
 
@@ -78,6 +78,7 @@ def manage_zone_records(name, zone):
 
     if __opts__["test"] == True:
         result["comment"] = "The state of {0} ({1}) will be changed ({2} changes).".format(name, zone["zone_id"], len(diff))
+        result["pchanges"] = result["changes"]
         return result
 
     managed.apply(diff)
@@ -89,7 +90,11 @@ def manage_zone_records(name, zone):
 
 
 def _changes(diff):
-    return map(lambda op: "{0} {1}".format(op["action"], str(op["record"])), diff)
+    changes = {}
+    actions = map(lambda op: "{0} {1}".format(op["action"], str(op["record"])), diff)
+    if actions:
+        changes['diff'] = "\n".join(actions)
+    return changes
 
 
 def record_from_dict(record):
