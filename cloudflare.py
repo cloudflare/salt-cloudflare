@@ -78,6 +78,7 @@ def manage_zone_records(name, zone):
 
     if __opts__["test"] == True:
         result["comment"] = "The state of {0} ({1}) will be changed ({2} changes).".format(name, zone["zone_id"], len(diff))
+        result["pchanges"] = result["changes"]
         return result
 
     managed.apply(diff)
