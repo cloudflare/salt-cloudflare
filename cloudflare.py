@@ -67,7 +67,7 @@ def manage_zone_records(name, zone):
 
     result = {
         "name": name,
-        "changes": {"changes": _changes(diff)},
+        "changes": _changes(diff),
         "result": None,
     }
 
@@ -89,7 +89,11 @@ def manage_zone_records(name, zone):
 
 
 def _changes(diff):
-    return map(lambda op: "{0} {1}".format(op["action"], str(op["record"])), diff)
+    changes = {}
+    actions = map(lambda op: "{0} {1}".format(op["action"], str(op["record"])), diff)
+    if actions:
+        changes['diff'] = "\n".join(actions)
+    return changes
 
 
 def record_from_dict(record):
