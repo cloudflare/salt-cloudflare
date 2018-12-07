@@ -294,7 +294,7 @@ class Zone(object):
         changes = []
 
         for key in set(desired_tuples).difference(existing_tuples):
-            if desired_tuples[key].managed == False:
+            if not desired_tuples[key].managed:
                 continue
             changes.append({
                 "action": self.ACTION_ADD,
