@@ -287,8 +287,9 @@ class Zone(object):
         return map(lambda record: record_from_dict(record.copy()), self.records)
 
     def diff(self):
-        existing_tuples = {(record.type, record.name, record.content): record for record in self.existing()}
+        existing_tuples = {(record.type, record.name, record.content, recrod.managed): record for record in self.existing()}
         desired_tuples = {(record.type, record.name, record.content, record.managed): record for record in self.desired()}
+        desired_managed = {record.name: record.managed for record in self.desired()}
 
         changes = []
 
@@ -301,6 +302,8 @@ class Zone(object):
             })
 
         for key in set(existing_tuples).difference(desired_tuples):
+            if key[1] in desired_managed and desired_managed[key[1]] == False:
+                continue
             changes.append({
                 "action": self.ACTION_REMOVE,
                 "record": existing_tuples[key],
