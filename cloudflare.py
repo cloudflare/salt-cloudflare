@@ -287,7 +287,7 @@ class Zone(object):
         return map(lambda record: record_from_dict(record.copy()), self.records)
 
     def diff(self):
-        existing_tuples = {(record.type, record.name, record.content): record for record in self.existing()}
+         existing_tuples = {(record.type, record.name, record.content, record.managed): record for record in self.existing()}
         desired_tuples = {(record.type, record.name, record.content, record.managed): record for record in self.desired()}
 
         changes = []
