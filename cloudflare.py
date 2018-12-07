@@ -310,7 +310,7 @@ class Zone(object):
             })
 
         for key in set(existing_tuples).intersection(desired_tuples):
-            if (existing_tuples[key].pure() == desired_tuples[key]) or (desired_tuples[key].managed == False):
+            if existing_tuples[key].pure() == desired_tuples[key] or not desired_tuples[key].managed:
                 continue
             changes.append({
                 "action": self.ACTION_UPDATE,
