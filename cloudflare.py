@@ -36,12 +36,12 @@ Zone data will look like this:
 
 Each record can have the following fields:
 
-* `name`    - domain name (including zone)
-* `content` - value of the record
-* `type`    - type of the record: A, AAAA, SRV, etc (A by default)
-* `proxied` - whether zone should be proxied (false by default)
-* `ttl`     - TTL of the record, 1 means auto" (1 by default)
-* `managed` - Whether Salt should manage the record, or skip it (True by default)
+* `name`         - domain name (including zone)
+* `content`      - value of the record
+* `type`         - type of the record: A, AAAA, SRV, etc (A by default)
+* `proxied`      - whether zone should be proxied (false by default)
+* `ttl`          - TTL of the record, 1 means auto" (1 by default)
+* `salt_managed` - Whether Salt should manage the record, or skip it (True by default)
 
 Reference: https://api.cloudflare.com/#dns-records-for-a-zone-properties
 
@@ -103,14 +103,14 @@ def record_from_dict(record):
     record.setdefault("proxied", False)
     record.setdefault("id", None)
     record.setdefault("ttl", 1)
-    record.setdefault("managed", True)
-    return Record(record["id"], record["type"], record["name"], record["content"], record["proxied"], record["ttl"], record["managed"])
+    record.setdefault("salt_managed", True)
+    return Record(record["id"], record["type"], record["name"], record["content"], record["proxied"], record["ttl"], record["salt_managed"])
 
 
-class Record(namedtuple("Record", ("id", "type", "name", "content", "proxied", "ttl", "managed"))):
+class Record(namedtuple("Record", ("id", "type", "name", "content", "proxied", "ttl", "salt_managed"))):
 
     def pure(self):
-        return Record(None, self.type, self.name, self.content, self.proxied, self.ttl, self.managed)
+        return Record(None, self.type, self.name, self.content, self.proxied, self.ttl, self.salt_managed)
 
     """
     Cloudflare API expects `data` attribute when you add SRV records
@@ -287,14 +287,14 @@ class Zone(object):
         return map(lambda record: record_from_dict(record.copy()), self.records)
 
     def diff(self):
-        existing_tuples = {(record.type, record.name, record.content, record.managed): record for record in self.existing()}
-        desired_tuples = {(record.type, record.name, record.content, record.managed): record for record in self.desired()}
-        desired_managed = {record.name: record.managed for record in self.desired()}
+        existing_tuples = {(record.type, record.name, record.content, record.salt_managed): record for record in self.existing()}
+        desired_tuples = {(record.type, record.name, record.content, record.salt_managed): record for record in self.desired()}
+        desired_salt_managed = {record.name: record.salt_managed for record in self.desired()}
 
         changes = []
 
         for key in set(desired_tuples).difference(existing_tuples):
-            if not desired_tuples[key].managed:
+            if not desired_tuples[key].salt_managed:
                 continue
             changes.append({
                 "action": self.ACTION_ADD,
@@ -302,7 +302,7 @@ class Zone(object):
             })
 
         for key in set(existing_tuples).difference(desired_tuples):
-            if key[1] in desired_managed and desired_managed[key[1]] == False:
+            if key[1] in desired_salt_managed and desired_salt_managed[key[1]] == False:
                 continue
             changes.append({
                 "action": self.ACTION_REMOVE,
@@ -310,7 +310,7 @@ class Zone(object):
             })
 
         for key in set(existing_tuples).intersection(desired_tuples):
-            if existing_tuples[key].pure() == desired_tuples[key] or not desired_tuples[key].managed:
+            if existing_tuples[key].pure() == desired_tuples[key] or not desired_tuples[key].salt_managed:
                 continue
             changes.append({
                 "action": self.ACTION_UPDATE,
