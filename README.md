@@ -55,12 +55,12 @@ cloudflare_zones:
 
 Each record can have the following fields:
 
-* `name`    - domain name (including zone)
-* `content` - value of the record
-* `type`    - type of the record: `A`, `AAAA`, `SRV`, etc (`A` by default)
-* `proxied` - whether zone should be proxied (`false` by default)
-* `ttl`     - TTL of the record in seconds, `1` means auto" (`1` by default)
-* `managed` - whether the record will be managed by Salt (`true` by default)
+* `name`         - domain name (including zone)
+* `content`      - value of the record
+* `type`         - type of the record: `A`, `AAAA`, `SRV`, etc (`A` by default)
+* `proxied`      - whether zone should be proxied (`false` by default)
+* `ttl`          - TTL of the record in seconds, `1` means auto" (`1` by default)
+* `salt_managed` - whether the record will be managed by Salt (`true` by default)
 
 Reference: https://api.cloudflare.com/#dns-records-for-a-zone-properties
 
