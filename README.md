@@ -61,6 +61,7 @@ Each record can have the following fields:
 * `proxied`      - whether zone should be proxied (`false` by default)
 * `ttl`          - TTL of the record in seconds, `1` means auto" (`1` by default)
 * `salt_managed` - whether the record will be managed by Salt (`true` by default)
+* `priority`     - The priority of the record. Only valid (and required) for MX records
 
 Reference: https://api.cloudflare.com/#dns-records-for-a-zone-properties
 

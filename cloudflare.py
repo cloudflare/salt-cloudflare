@@ -42,6 +42,7 @@ Each record can have the following fields:
 * `proxied`      - whether zone should be proxied (false by default)
 * `ttl`          - TTL of the record, 1 means auto" (1 by default)
 * `salt_managed` - Whether Salt should manage the record, or skip it (True by default)
+* `priority`     - The priority of the record. Only valid (and required) for MX records
 
 Reference: https://api.cloudflare.com/#dns-records-for-a-zone-properties
 
@@ -113,11 +114,13 @@ def record_from_dict(record):
     record.setdefault("id", None)
     record.setdefault("ttl", 1)
     record.setdefault("salt_managed", True)
+    priority = record["priority"] if record["type"] == "MX" else None
     return Record(
         record["id"],
         record["type"],
         record["name"],
         record["content"],
+        priority,
         record["proxied"],
         record["ttl"],
         record["salt_managed"],
@@ -126,7 +129,7 @@ def record_from_dict(record):
 
 class Record(
     namedtuple(
-        "Record", ("id", "type", "name", "content", "proxied", "ttl", "salt_managed")
+        "Record", ("id", "type", "name", "content", "priority", "proxied", "ttl", "salt_managed")
     )
 ):
     def pure(self):
@@ -135,6 +138,7 @@ class Record(
             self.type,
             self.name,
             self.content,
+            self.priority,
             self.proxied,
             self.ttl,
             self.salt_managed,
@@ -168,9 +172,23 @@ class Record(
 
     def __str__(self):
         ttl_str = 'auto' if self.ttl == 1 else '{0}s'.format(self.ttl)
+        priority_string = 'priority: {0}, '.format(self.priority) if self.type == "MX" else ''
         return "{0} {1} -> '{2}' (proxied: {3}, ttl: {4})".format(
-            self.type, self.name, self.content, str(self.proxied).lower(), ttl_str
+            self.type, self.name, self.content, priority_string, str(self.proxied).lower(), ttl_str
         )
+
+    def json(self):
+        dict = {
+            "type": self.type,
+            "name": self.name,
+            "content": self.content,
+            "proxied": self.proxied,
+            "data": self.data(),
+            "ttl": self.ttl,
+        }
+        if self.type == "MX":
+            dict["priority"] = self.priority
+        return dict
 
 
 class Zone(object):
@@ -231,14 +249,7 @@ class Zone(object):
         self._request(
             self.ADD_RECORD_URI_TEMPLATE.format(zone_id=self.zone_id),
             method="POST",
-            json={
-                "type": record.type,
-                "name": record.name,
-                "content": record.content,
-                "proxied": record.proxied,
-                "data": record.data(),
-                "ttl": record.ttl,
-            },
+            json=record.json(),
         )
 
     def _remove_record(self, record):
@@ -255,14 +266,7 @@ class Zone(object):
                 zone_id=self.zone_id, record_id=record.id
             ),
             method="PUT",
-            json={
-                "type": record.type,
-                "name": record.name,
-                "content": record.content,
-                "proxied": record.proxied,
-                "data": record.data(),
-                "ttl": record.ttl,
-            },
+            json=record.json(),
         )
 
     def sanity_check(self):
@@ -404,6 +408,7 @@ class Zone(object):
                         desired_tuples[key].type,
                         desired_tuples[key].name,
                         desired_tuples[key].content,
+                        priority=desired_tuples[key].priority,
                         proxied=desired_tuples[key].proxied,
                         ttl=desired_tuples[key].ttl,
                         salt_managed=True,
