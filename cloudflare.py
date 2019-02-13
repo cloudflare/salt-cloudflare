@@ -87,7 +87,8 @@ def manage_zone_records(name, zone):
         result["comment"] = "The state of {0} ({1}) is up to date.".format(
             name, zone["zone_id"]
         )
-        result["result"] = True
+        result["changes"] = {}
+        result["result"] = None if __opts__["test"] == True else True
         return result
 
     if __opts__["test"] == True:
