@@ -430,7 +430,7 @@ class Zone(object):
             for op in sorted(ops, key=lambda op: order[op["action"]]):
                 result.append(op)
 
-        for name, ops in groups["primary"].iteritems():
+        for name, ops in groups["primary"].items():
             if any(op["record"].type == "CNAME" for op in ops):
                 # need to remove before adding
                 append_in_order(ops, self.SPECIAL_APPLY_ORDER)
@@ -438,7 +438,7 @@ class Zone(object):
                 # nothing special about these records
                 append_in_order(ops, self.REGULAR_APPLY_ORDER)
 
-        for name, ops in groups["rest"].iteritems():
+        for name, ops in groups["rest"].items():
             append_in_order(ops, self.REGULAR_APPLY_ORDER)
 
         return result
