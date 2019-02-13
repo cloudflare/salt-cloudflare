@@ -60,6 +60,7 @@ import json
 import yaml
 import requests
 import logging
+import salt.exceptions
 
 
 logger = logging.getLogger(__name__)
@@ -68,7 +69,15 @@ logger = logging.getLogger(__name__)
 def manage_zone_records(name, zone):
     managed = Zone(name, zone)
 
-    managed.sanity_check()
+    try:
+        managed.sanity_check()
+    except salt.exceptions.SaltInvocationError as err:
+        return {
+            "name": name,
+            "changes": {},
+            "result": False,
+            "comment": "{0}".format(err)
+        }
 
     diff = managed.diff()
 
@@ -107,6 +116,13 @@ def _changes(diff):
         changes['diff'] = "\n".join(actions)
     return changes
 
+def validate_record(record):
+    if "name" not in record:
+        raise salt.exceptions.SaltInvocationError("'name' is required")
+    if "content" not in record:
+        raise salt.exceptions.SaltInvocationError("Required field 'content' is missing for entry <{0}>".format(record["name"]))
+    if "type" in record and record["type"] == "MX" and "priority" not in record:
+        raise salt.exceptions.SaltInvocationError("Required field 'priority' is missing for MX entry <{0}>".format(record["name"]))
 
 def record_from_dict(record):
     record.setdefault("type", "A")
@@ -365,6 +381,8 @@ class Zone(object):
         return records.values()
 
     def desired(self):
+        for record in self.records:
+            validate_record(record)
         return map(lambda record: record_from_dict(record.copy()), self.records)
 
     def diff(self):
