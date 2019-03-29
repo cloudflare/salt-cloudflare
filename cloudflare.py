@@ -66,25 +66,29 @@ def manage_zone_records(name, zone):
 
     diff = managed.diff()
 
-    result = {
-        "name": name,
-        "changes": _changes(diff),
-        "result": None,
-    }
+    result = {"name": name, "changes": _changes(diff), "result": None}
 
     if len(diff) == 0:
-        result["comment"] = "The state of {0} ({1}) is up to date.".format(name, zone["zone_id"])
+        result["comment"] = "The state of {0} ({1}) is up to date.".format(
+            name, zone["zone_id"]
+        )
         result["result"] = True
         return result
 
     if __opts__["test"] == True:
-        result["comment"] = "The state of {0} ({1}) will be changed ({2} changes).".format(name, zone["zone_id"], len(diff))
+        result[
+            "comment"
+        ] = "The state of {0} ({1}) will be changed ({2} changes).".format(
+            name, zone["zone_id"], len(diff)
+        )
         result["pchanges"] = result["changes"]
         return result
 
     managed.apply(diff)
 
-    result["comment"] = "The state of {0} ({1}) was changed ({2} changes).".format(name, zone["zone_id"], len(diff))
+    result["comment"] = "The state of {0} ({1}) was changed ({2} changes).".format(
+        name, zone["zone_id"], len(diff)
+    )
     result["result"] = True
 
     return result
@@ -104,18 +108,38 @@ def record_from_dict(record):
     record.setdefault("id", None)
     record.setdefault("ttl", 1)
     record.setdefault("salt_managed", True)
-    return Record(record["id"], record["type"], record["name"], record["content"], record["proxied"], record["ttl"], record["salt_managed"])
+    return Record(
+        record["id"],
+        record["type"],
+        record["name"],
+        record["content"],
+        record["proxied"],
+        record["ttl"],
+        record["salt_managed"],
+    )
 
 
-class Record(namedtuple("Record", ("id", "type", "name", "content", "proxied", "ttl", "salt_managed"))):
-
+class Record(
+    namedtuple(
+        "Record", ("id", "type", "name", "content", "proxied", "ttl", "salt_managed")
+    )
+):
     def pure(self):
-        return Record(None, self.type, self.name, self.content, self.proxied, self.ttl, self.salt_managed)
+        return Record(
+            None,
+            self.type,
+            self.name,
+            self.content,
+            self.proxied,
+            self.ttl,
+            self.salt_managed,
+        )
 
     """
     Cloudflare API expects `data` attribute when you add SRV records
     instead of `content`. This method synthesizes `data` from `content`.
     """
+
     def data(self):
         if self.type == "SRV":
             service, proto, name = self.name.split(".", 2)
@@ -136,24 +160,11 @@ class Record(namedtuple("Record", ("id", "type", "name", "content", "proxied", "
                 "port": int(port),
                 "target": target,
             }
-        if self.type == "CAA":
-            parts = self.content.split("\t")
-            flags, tag, value = parts
-            return {
-                "name": self.name,
-                "flags": int(flags),
-                "tag": tag,
-                "value": value[1:-1],
-            }
 
     def __str__(self):
         ttl_str = 'auto' if self.ttl == 1 else '{0}s'.format(self.ttl)
         return "{0} {1} -> '{2}' (proxied: {3}, ttl: {4})".format(
-            self.type,
-            self.name,
-            self.content,
-            str(self.proxied).lower(),
-            ttl_str,
+            self.type, self.name, self.content, str(self.proxied).lower(), ttl_str
         )
 
 
@@ -162,25 +173,23 @@ class Zone(object):
     ZONES_URI_TEMPLATE = "https://api.cloudflare.com/client/v4/zones/{zone_id}"
     RECORDS_URI_TEMPLATE = "https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?page={page}&per_page=50"
 
-    ADD_RECORD_URI_TEMPLATE = "https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records"
-    REMOVE_RECORD_URI_TEMPLATE = "https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{record_id}"
-    UPDATE_RECORD_URI_TEMPLATE = "https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{record_id}"
+    ADD_RECORD_URI_TEMPLATE = (
+        "https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records"
+    )
+    REMOVE_RECORD_URI_TEMPLATE = (
+        "https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{record_id}"
+    )
+    UPDATE_RECORD_URI_TEMPLATE = (
+        "https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{record_id}"
+    )
 
     ACTION_ADD = "add"
     ACTION_REMOVE = "remove"
     ACTION_UPDATE = "update"
 
-    SPECIAL_APPLY_ORDER = {
-        ACTION_REMOVE: 0,
-        ACTION_ADD: 1,
-        ACTION_UPDATE: 2,
-    }
+    SPECIAL_APPLY_ORDER = {ACTION_REMOVE: 0, ACTION_ADD: 1, ACTION_UPDATE: 2}
 
-    REGULAR_APPLY_ORDER = {
-        ACTION_ADD: 0,
-        ACTION_UPDATE: 1,
-        ACTION_REMOVE: 2
-    }
+    REGULAR_APPLY_ORDER = {ACTION_ADD: 0, ACTION_UPDATE: 1, ACTION_REMOVE: 2}
 
     def __init__(self, name, zone):
         self.name = name
@@ -190,10 +199,7 @@ class Zone(object):
         self.records = zone["records"]
 
     def _request(self, uri, method="GET", json=None):
-        headers = {
-            "X-Auth-Email": self.auth_email,
-            "X-Auth-Key": self.auth_key,
-        }
+        headers = {"X-Auth-Email": self.auth_email, "X-Auth-Key": self.auth_key}
 
         logger.info("Sending request: {0} {1} data: {2}".format(method, uri, json))
 
@@ -209,76 +215,125 @@ class Zone(object):
             raise Exception("Unknown request method: {0}".format(method))
 
         if not resp.ok:
-            raise Exception("Got HTTP code {0}: {1}".format(resp.status_code, resp.text))
+            raise Exception(
+                "Got HTTP code {0}: {1}".format(resp.status_code, resp.text)
+            )
 
         return resp.json()
 
     def _add_record(self, record):
-        self._request(self.ADD_RECORD_URI_TEMPLATE.format(zone_id=self.zone_id), method="POST", json={
-            "type": record.type,
-            "name": record.name,
-            "content": record.content,
-            "proxied": record.proxied,
-            "data": record.data(),
-            "ttl": record.ttl,
-        })
+        self._request(
+            self.ADD_RECORD_URI_TEMPLATE.format(zone_id=self.zone_id),
+            method="POST",
+            json={
+                "type": record.type,
+                "name": record.name,
+                "content": record.content,
+                "proxied": record.proxied,
+                "data": record.data(),
+                "ttl": record.ttl,
+            },
+        )
 
     def _remove_record(self, record):
-        self._request(self.REMOVE_RECORD_URI_TEMPLATE.format(zone_id=self.zone_id, record_id=record.id), method="DELETE")
+        self._request(
+            self.REMOVE_RECORD_URI_TEMPLATE.format(
+                zone_id=self.zone_id, record_id=record.id
+            ),
+            method="DELETE",
+        )
 
     def _update_record(self, record):
-        self._request(self.UPDATE_RECORD_URI_TEMPLATE.format(zone_id=self.zone_id, record_id=record.id), method="PUT", json={
-            "type": record.type,
-            "name": record.name,
-            "content": record.content,
-            "proxied": record.proxied,
-            "data": record.data(),
-            "ttl": record.ttl,
-        })
+        self._request(
+            self.UPDATE_RECORD_URI_TEMPLATE.format(
+                zone_id=self.zone_id, record_id=record.id
+            ),
+            method="PUT",
+            json={
+                "type": record.type,
+                "name": record.name,
+                "content": record.content,
+                "proxied": record.proxied,
+                "data": record.data(),
+                "ttl": record.ttl,
+            },
+        )
 
     def sanity_check(self):
         found = self._request(self.ZONES_URI_TEMPLATE.format(zone_id=self.zone_id))
 
         if self.name != found["result"]["name"]:
-            raise Exception("Zone name does not match: {0} != {1}".format(self.name, found["result"]["name"]))
+            raise Exception(
+                "Zone name does not match: {0} != {1}".format(
+                    self.name, found["result"]["name"]
+                )
+            )
 
         As = set()
         CNAMEs = set()
 
         for record in self.desired():
-            if not record.name.endswith("." + self.name) and not record.name == self.name:
-                raise Exception("Record {0} does not belong to zone {1}".format(record.name, self.name))
+            if (
+                not record.name.endswith("." + self.name)
+                and not record.name == self.name
+            ):
+                raise Exception(
+                    "Record {0} does not belong to zone {1}".format(
+                        record.name, self.name
+                    )
+                )
 
             if record.ttl != 1 and record.ttl < 120:
-                raise Exception("Record {0} has invalid TTL: {1}".format(record.name, record.ttl))
+                raise Exception(
+                    "Record {0} has invalid TTL: {1}".format(record.name, record.ttl)
+                )
 
             if record.ttl != 1 and record.proxied:
-                raise Exception("Record {0} has TTL set, but TTL for proxied records is managed by Cloudflare".format(record.name))
+                raise Exception(
+                    "Record {0} has TTL set, but TTL for proxied records is managed by Cloudflare".format(
+                        record.name
+                    )
+                )
 
             try:
                 record.data()
             except Exception as e:
-                raise Exception("Record {0} cannot synthesize data from content: {1}".format(str(record), e))
+                raise Exception(
+                    "Record {0} cannot synthesize data from content: {1}".format(
+                        str(record), e
+                    )
+                )
 
             if record.type in ("A", "AAAA"):
                 As.add(record.name)
                 if record.name in CNAMEs:
-                    raise Exception("Record {0} has both A/AAAA and CNAME records".format(record.name))
+                    raise Exception(
+                        "Record {0} has both A/AAAA and CNAME records".format(
+                            record.name
+                        )
+                    )
 
             if record.type in ("CNAME",):
                 if record.name in CNAMEs:
-                    raise Exception("Record {0} has serveral CNAME records".format(record.name))
+                    raise Exception(
+                        "Record {0} has serveral CNAME records".format(record.name)
+                    )
                 CNAMEs.add(record.name)
                 if record.name in As:
-                    raise Exception("Record {0} has both A/AAAA and CNAME records".format(record.name))
-
+                    raise Exception(
+                        "Record {0} has both A/AAAA and CNAME records".format(
+                            record.name
+                        )
+                    )
 
     def existing(self):
         records = {}
 
         page = 1
         while True:
-            found = self._request(self.RECORDS_URI_TEMPLATE.format(zone_id=self.zone_id, page=page))
+            found = self._request(
+                self.RECORDS_URI_TEMPLATE.format(zone_id=self.zone_id, page=page)
+            )
 
             for record in found["result"]:
                 records[record["id"]] = record_from_dict(record)
@@ -296,50 +351,57 @@ class Zone(object):
         return map(lambda record: record_from_dict(record.copy()), self.records)
 
     def diff(self):
-        existing_tuples = {(record.type, record.name, record.content, record.salt_managed): record for record in self.existing()}
-        desired_tuples = {(record.type, record.name, record.content, record.salt_managed): record for record in self.desired()}
-        desired_salt_managed = {record.name: record.salt_managed for record in self.desired()}
+        existing_tuples = {
+            (record.type, record.name, record.content, record.salt_managed): record
+            for record in self.existing()
+        }
+        desired_tuples = {
+            (record.type, record.name, record.content, record.salt_managed): record
+            for record in self.desired()
+        }
+        desired_salt_managed = {
+            record.name: record.salt_managed for record in self.desired()
+        }
 
         changes = []
 
         for key in set(desired_tuples).difference(existing_tuples):
             if not desired_tuples[key].salt_managed:
                 continue
-            changes.append({
-                "action": self.ACTION_ADD,
-                "record": desired_tuples[key],
-            })
+            changes.append({"action": self.ACTION_ADD, "record": desired_tuples[key]})
 
         for key in set(existing_tuples).difference(desired_tuples):
             if key[1] in desired_salt_managed and desired_salt_managed[key[1]] == False:
                 continue
-            changes.append({
-                "action": self.ACTION_REMOVE,
-                "record": existing_tuples[key],
-            })
+            changes.append(
+                {"action": self.ACTION_REMOVE, "record": existing_tuples[key]}
+            )
 
         for key in set(existing_tuples).intersection(desired_tuples):
-            if existing_tuples[key].pure() == desired_tuples[key] or not desired_tuples[key].salt_managed:
+            if (
+                existing_tuples[key].pure() == desired_tuples[key]
+                or not desired_tuples[key].salt_managed
+            ):
                 continue
-            changes.append({
-                "action": self.ACTION_UPDATE,
-                "record": Record(
-                    existing_tuples[key].id,
-                    desired_tuples[key].type,
-                    desired_tuples[key].name,
-                    desired_tuples[key].content,
-                    proxied=desired_tuples[key].proxied,
-                    ttl=desired_tuples[key].ttl,
-                ),
-            })
+            changes.append(
+                {
+                    "action": self.ACTION_UPDATE,
+                    "record": Record(
+                        existing_tuples[key].id,
+                        desired_tuples[key].type,
+                        desired_tuples[key].name,
+                        desired_tuples[key].content,
+                        proxied=desired_tuples[key].proxied,
+                        ttl=desired_tuples[key].ttl,
+                        salt_managed=True,
+                    ),
+                }
+            )
 
         return self._order(changes)
 
     def _order(self, diff):
-        groups = {
-            "primary": {},
-            "rest": {},
-        }
+        groups = {"primary": {}, "rest": {}}
 
         for op in diff:
             group = "rest"
@@ -368,7 +430,6 @@ class Zone(object):
 
         return result
 
-
     def apply(self, diff):
         for op in diff:
             if op["action"] == self.ACTION_ADD:
@@ -378,4 +439,6 @@ class Zone(object):
             elif op["action"] == self.ACTION_UPDATE:
                 self._update_record(op["record"])
             else:
-                raise Exception("Unknown action {0} for record {1}", op["action"], str(op["record"]))
+                raise Exception(
+                    "Unknown action {0} for record {1}", op["action"], str(op["record"])
+                )
