@@ -45,11 +45,16 @@ Each record can have the following fields:
 
 Reference: https://api.cloudflare.com/#dns-records-for-a-zone-properties
 
+In addition to `records`, it's also possible to provide `exclude` key
+with the list of regular expressions that will mark records that are
+managed externally.
+
 This state supports test mode. It makes sense to run it only on one node.
 '''
 
 from collections import namedtuple
 
+import re
 import json
 import yaml
 import requests
@@ -197,6 +202,7 @@ class Zone(object):
         self.auth_key = zone["auth_key"]
         self.zone_id = zone["zone_id"]
         self.records = zone["records"]
+        self.exclude = zone.get('exclude', [])
 
     def _request(self, uri, method="GET", json=None):
         headers = {"X-Auth-Email": self.auth_email, "X-Auth-Key": self.auth_key}
@@ -335,8 +341,15 @@ class Zone(object):
                 self.RECORDS_URI_TEMPLATE.format(zone_id=self.zone_id, page=page)
             )
 
-            for record in found["result"]:
-                records[record["id"]] = record_from_dict(record)
+            for record_dict in found["result"]:
+                record = record_from_dict(record_dict)
+                excluded = False
+                for pattern in self.exclude:
+                    if re.match(pattern, record.name):
+                        excluded = True
+                        break
+                if not excluded:
+                    records[record_dict["id"]] = record
 
             current_page = found["result_info"]["page"]
             total_pages = found["result_info"]["total_pages"]
