@@ -186,6 +186,15 @@ class Record(
                 "port": int(port),
                 "target": target,
             }
+        if self.type == "CAA":
+            parts = self.content.split("\t")
+            flags, tag, value = parts
+            return {
+                "name": self.name,
+                "flags": int(flags),
+                "tag": tag,
+                "value": value[1:-1],
+            }
 
     def __str__(self):
         ttl_str = 'auto' if self.ttl == 1 else '{0}s'.format(self.ttl)
