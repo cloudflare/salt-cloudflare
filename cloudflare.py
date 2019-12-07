@@ -242,14 +242,21 @@ class Zone(object):
 
     def __init__(self, name, zone):
         self.name = name
-        self.auth_email = zone["auth_email"]
-        self.auth_key = zone["auth_key"]
+        self.api_token = zone.get("api_token", None)
+        self.auth_email = zone.get("auth_email", None)
+        self.auth_key = zone.get("auth_key", None)
         self.zone_id = zone["zone_id"]
         self.records = zone["records"]
         self.exclude = zone.get('exclude', [])
+        
+        if not self.api_token and not (self.auth_email and self.auth_key):
+            raise Exception("Either api_token or auth_email and auth_key must be provided")
 
     def _request(self, uri, method="GET", json=None):
-        headers = {"X-Auth-Email": self.auth_email, "X-Auth-Key": self.auth_key}
+        if self.api_token:
+            headers = {"Authorization": "Bearer {0}".format(self.api_token)}
+        else:
+            headers = {"X-Auth-Email": self.auth_email, "X-Auth-Key": self.auth_key}
 
         logger.info("Sending request: {0} {1} data: {2}".format(method, uri, json))
 
