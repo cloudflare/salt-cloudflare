@@ -187,7 +187,7 @@ class Record(
                 "target": target,
             }
         if self.type == "CAA":
-            parts = self.content.split("\t")
+            parts = self.content.split(" ")
             flags, tag, value = parts
             return {
                 "name": self.name,
