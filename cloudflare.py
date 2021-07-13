@@ -88,7 +88,7 @@ def manage_zone_records(name, zone):
             name, zone["zone_id"]
         )
         result["changes"] = {}
-        result["result"] = None if __opts__["test"] == True else True
+        result["result"] = True
         return result
 
     if __opts__["test"] == True:
