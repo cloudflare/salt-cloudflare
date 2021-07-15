@@ -56,10 +56,11 @@ This state supports test mode. It makes sense to run it only on one node.
 from collections import namedtuple
 
 import re
+import json
+import yaml
+import requests
 import logging
 import salt.exceptions
-import salt.utils.http
-import salt.utils.json
 
 
 logger = logging.getLogger(__name__)
@@ -87,10 +88,10 @@ def manage_zone_records(name, zone):
             name, zone["zone_id"]
         )
         result["changes"] = {}
-        result["result"] = None if __opts__["test"] == True else True
+        result["result"] = True
         return result
 
-    if __opts__["test"] == True:
+    if __opts__["test"]:
         result[
             "comment"
         ] = "The state of {0} ({1}) will be changed ({2} changes).".format(
@@ -168,7 +169,7 @@ class Record(
     def data(self):
         if self.type == "SRV":
             service, proto, name = self.name.split(".", 2)
-            parts = self.content.split()
+            parts = self.content.split("\t")
             if len(parts) == 3:
                 # record should look like this: "priority weight port target"
                 # cloudflare returns: "weight port target"
@@ -186,13 +187,13 @@ class Record(
                 "target": target,
             }
         if self.type == "CAA":
-            parts = self.content.split()
+            parts = self.content.split(" ")
             flags, tag, value = parts
             return {
                 "name": self.name,
                 "flags": int(flags),
                 "tag": tag,
-                "value": value.strip('"'),
+                "value": value[1:-1],
             }
 
     def __str__(self):
@@ -257,20 +258,25 @@ class Zone(object):
         else:
             headers = {"X-Auth-Email": self.auth_email, "X-Auth-Key": self.auth_key}
 
-        if method not in ["GET", "POST", "PUT", "DELETE"]:
-            raise Exception("Unknown request method: {0}".format(method))
-
         logger.info("Sending request: {0} {1} data: {2}".format(method, uri, json))
 
-        data = salt.utils.json.dumps(json) if json else None
-        resp = salt.utils.http.query(uri, header_dict=headers, data=data, decode=True, method=method)
+        if method == "GET":
+            resp = requests.get(uri, headers=headers)
+        elif method == "POST":
+            resp = requests.post(uri, headers=headers, json=json)
+        elif method == "PUT":
+            resp = requests.put(uri, headers=headers, json=json)
+        elif method == "DELETE":
+            resp = requests.delete(uri, headers=headers)
+        else:
+            raise Exception("Unknown request method: {0}".format(method))
 
-        if resp.get('error'):
+        if not resp.ok:
             raise Exception(
-                "Got HTTP code {0}: {1}".format(resp.get('status'), resp.get('error'))
+                "Got HTTP code {0}: {1}".format(resp.status_code, resp.text)
             )
 
-        return resp['dict']
+        return resp.json()
 
     def _add_record(self, record):
         self._request(
