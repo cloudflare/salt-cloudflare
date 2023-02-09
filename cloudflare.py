@@ -58,8 +58,6 @@ from collections import namedtuple
 import re
 import logging
 import salt.exceptions
-import salt.utils.http
-import salt.utils.json
 
 
 logger = logging.getLogger(__name__)
@@ -262,8 +260,8 @@ class Zone(object):
 
         logger.info("Sending request: {0} {1} data: {2}".format(method, uri, json))
 
-        data = salt.utils.json.dumps(json) if json else None
-        resp = salt.utils.http.query(uri, header_dict=headers, data=data, decode=True, method=method)
+        data = __utils__["json.dumps"](json) if json else None
+        resp = __utils__["http.query"](uri, header_dict=headers, data=data, decode=True, method=method)
 
         if resp.get('error'):
             raise Exception(
