@@ -195,6 +195,21 @@ class Record(
                 "tag": tag,
                 "value": value[1:-1],
             }
+        if self.type == "DS":
+            # See https://api.cloudflare.com/#dns-records-for-a-zone-properties
+            # DS record / data
+            # key_tag     = 0-65535
+            # algorithm   = 0-255
+            # digest_type = 0-255
+            # digest      = string
+            parts = self.content.split(" ")
+            key_tag, algorithm, digest_type, digest = parts
+            return {
+                "key_tag": int(key_tag),
+                "algorithm": int(algorithm),
+                "digest_type": int(digest_type),
+                "digest": digest,
+            }
 
     def __str__(self):
         ttl_str = 'auto' if self.ttl == 1 else '{0}s'.format(self.ttl)
