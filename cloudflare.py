@@ -199,7 +199,7 @@ class Record(
     def __str__(self):
         ttl_str = 'auto' if self.ttl == 1 else '{0}s'.format(self.ttl)
         priority_string = 'priority: {0}, '.format(self.priority) if self.type == "MX" else ''
-        return "{0} {1} -> '{2}' (proxied: {3}, ttl: {4})".format(
+        return "{0} {1} -> '{2}' ({3}proxied: {4}, ttl: {5})".format(
             self.type, self.name, self.content, priority_string, str(self.proxied).lower(), ttl_str
         )
 
